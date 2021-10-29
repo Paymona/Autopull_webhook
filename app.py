@@ -51,11 +51,11 @@ def register_domain():
     c = nginx.Conf()
     s = nginx.Server()
     s.add(
-            nginx.Key('listen', '80')
-            nginx.Comment("Automated nginx conf from webhook")
-            nginx.Key('server_name', f"{_domain} www.{_domain}")
-            nginx.Key('root', repo_query.path)
-            nginx.Key('index', "index.html index.htm index.nginx-debian.html")
+            nginx.Key('listen', '80'),
+            nginx.Comment("Automated nginx conf from webhook"),
+            nginx.Key('server_name', f"{_domain} www.{_domain}"),
+            nginx.Key('root', repo_query.path),
+            nginx.Key('index', "index.html index.htm index.nginx-debian.html"),
             nginx.Location("/",
                 nginx.Key("try_files", "$uri $uri/ =404")
             )
