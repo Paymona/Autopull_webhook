@@ -1,8 +1,11 @@
-from flask import Flask, jsonify, request
-from config import username, password
 from git import Repo
+from git.cmd import Git
 from models import Repository
-import nginx
+from config import username, password
+from flask import Flask, jsonify, request
+from nginx import Conf, Server, Key, Comment, Location, dumpf
+
+
 app = Flask(__name__)
 
 
@@ -27,9 +30,11 @@ def register():
     except Exception as e:
         return jsonify({'error': str(e)})
 
+    # Forgot to save
     repo = Repository(
         path = full_local_path,
     )
+    repo.save()
 
     return jsonify({
         "msg" : "Successifully cloned",
@@ -48,20 +53,35 @@ def register_domain():
     except:
         return jsonify(msg="Project Not Found")
 
-    c = nginx.Conf()
-    s = nginx.Server()
+    c = Conf()
+    s = Server()
     s.add(
-            nginx.Key('listen', '80'),
-            nginx.Comment("Automated nginx conf from webhook"),
-            nginx.Key('server_name', f"{_domain} www.{_domain}"),
-            nginx.Key('root', repo_query.path),
-            nginx.Key('index', "index.html index.htm index.nginx-debian.html"),
-            nginx.Location("/",
-                nginx.Key("try_files", "$uri $uri/ =404")
+            Key('listen', '80'),
+            Comment("Automated nginx conf from webhook"),
+            Key('server_name', f"{_domain} www.{_domain}"),
+            Key('root', repo_query.path),
+            Key('index', "index.html index.htm index.nginx-debian.html"),
+            Location(
+                "/",
+                Key("try_files", "$uri $uri/ =404")
             )
     )
+
     c.add(s)
-    nginx.dumpf(c, f'/etc/nginx/sites-available/{_domain}')
+    dumpf(c, f'/etc/nginx/sites-available/{_domain}')
+
+@app.route('/<token>', methods=["POST"])
+def Get_Pull(token):
+    try:
+        repo_query = Repo.get(Repo.code == token)
+    except:
+        return jsonify(msg="Not Found")
+
+    git = Git(repo_query.path)
+
+    git.pull()
+
+    return jsonify(msg="Done")
 
 
 if __name__ == '__main__':
